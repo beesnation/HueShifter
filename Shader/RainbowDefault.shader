@@ -35,16 +35,19 @@ Shader "Custom/RainbowDefault"
             
             #include "Rainbow.cginc"
             #include "UnitySprites.cginc"
-
 			
 			fixed4 RainbowFrag(v2f IN) : SV_Target
 			{
-				fixed4 c = SpriteFrag(IN);
+				fixed4 c = SampleSpriteTexture (IN.texcoord) * IN.color;
+				c = _Color * c;
 				c.rgb = hueshift(IN.texcoord, c.rgb);
 				return c;
 			}
             
             ENDCG
         }
+    	
+    	
+    	
     }
 }

@@ -55,7 +55,7 @@ Shader "Custom/RainbowLit"
         {
             fixed4 c = SampleSpriteTexture (IN.uv_MainTex) * IN.color;
 			// Unity's built in shader seems to multiply rgb by alpha here.
-			// HK's one doesn't I think?
+			// HK's shaders don't I think?
             o.Albedo = hueshift(IN.uv_MainTex, c.rgb);
             o.Alpha = c.a;
         }

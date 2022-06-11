@@ -17,7 +17,11 @@ namespace HueShifter
         private Menu _menuRef;
 
         public Shader RainbowDefault;
+        public Shader RainbowScreenBlend;
         public Shader RainbowLit;
+        public Shader RainbowParticleAdd;
+        public Shader RainbowParticleAddSoft;
+        
         public Dictionary<string, float> Palette = new();
 
         // Rider did this it's more efficient or something
@@ -45,7 +49,10 @@ namespace HueShifter
             foreach (var name in assetBundle.GetAllAssetNames()) Log($"assetBundle contains {name}");
 
             RainbowDefault = assetBundle.LoadAsset<Shader>("assets/shader/rainbowdefault.shader");
+            RainbowScreenBlend = assetBundle.LoadAsset<Shader>("assets/shader/rainbowscreenblend.shader");
             RainbowLit = assetBundle.LoadAsset<Shader>("assets/shader/rainbowlit.shader");
+            RainbowParticleAdd = assetBundle.LoadAsset<Shader>("assets/shader/rainbowparticleadd.shader");
+            RainbowParticleAddSoft = assetBundle.LoadAsset<Shader>("assets/shader/rainbowparticleaddsoft.shader");
         }
 
         public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
@@ -89,23 +96,38 @@ namespace HueShifter
         {
             var props = new MaterialPropertyBlock();
 
-            foreach (var renderer in UObject.FindObjectsOfType<Renderer>())
+            foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
             {
+                if (renderer.gameObject.scene.name != GameManager.instance.sceneName) continue;
+                
                 var material = renderer.material;
                 material.shader = material.shader.name switch
                 {
                     "Sprites/Lit" => GS.RespectLighting ? RainbowLit : RainbowDefault,
                     "Sprites/Default" => RainbowDefault,
+                    "Sprites/Cherry-Default" => RainbowDefault,
+                    "UI/BlendModes/Screen" => RainbowScreenBlend,
+                    "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
+                    "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
                     _ => material.shader
                 };
 
-                if (material.shader.name is not ("Custom/RainbowLit" or "Custom/RainbowDefault")) continue;
+                if (material.shader.name is not (
+                    "Custom/RainbowLit" or 
+                    "Custom/RainbowDefault" or 
+                    "Custom/RainbowScreenBlend" or 
+                    "Custom/RainbowParticleAdd" or 
+                    "Custom/RainbowParticleAddSoft")) continue;
                 renderer.GetPropertyBlock(props);
                 props.SetFloat(PhaseProperty, GetPhase());
                 props.SetFloat(TimeFrequencyProperty, GS.TimeFrequency / 10);
                 props.SetFloat(XFrequencyProperty, GS.XFrequency*GS.XFrequency*Math.Sign(GS.XFrequency)/20);
                 props.SetFloat(YFrequencyProperty, GS.YFrequency*GS.YFrequency*Math.Sign(GS.YFrequency)/20);
                 renderer.SetPropertyBlock(props);
+
+                var block = new MaterialPropertyBlock();
+                block.SetColor("_FlashColor", new Color(1,1,1));
+                
             }
         }
 
