@@ -17,3 +17,11 @@ TODOs:
 + Replace the current rainbow options with an effect that won't cause issues with animated textures.
 + Maybe hue shift the scene lighting too.
 + Eventually maybe make CK but for shaders?
+
+## Screenshot Gallery
+
+![](https://user-images.githubusercontent.com/106181028/173234232-19ce8379-2dea-40cb-86e4-51dceadeab07.png)
+![](https://user-images.githubusercontent.com/106181028/173234464-283515e1-bce1-4570-8c2e-32500b98a06b.png)
+![](https://user-images.githubusercontent.com/106181028/173234238-9f0ceae9-11d3-47a3-86bc-ded545be2cc2.png)
+![](https://user-images.githubusercontent.com/106181028/173234246-7aa7baae-4dfd-4b84-86d5-b5e7f1301e74.png)
+![](https://user-images.githubusercontent.com/106181028/173234234-afd14cf1-eeef-4a18-b7e3-ea243e31d7db.png)
