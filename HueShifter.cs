@@ -99,35 +99,33 @@ namespace HueShifter
             foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
             {
                 if (renderer.gameObject.scene.name != GameManager.instance.sceneName) continue;
-                
-                var material = renderer.material;
-                material.shader = material.shader.name switch
+
+                foreach (var material in renderer.materials)
                 {
-                    "Sprites/Lit" => GS.RespectLighting ? RainbowLit : RainbowDefault,
-                    "Sprites/Default" => RainbowDefault,
-                    "Sprites/Cherry-Default" => RainbowDefault,
-                    "UI/BlendModes/Screen" => RainbowScreenBlend,
-                    "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
-                    "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
-                    _ => material.shader
-                };
+                    material.shader = material.shader.name switch
+                    {
+                        "Sprites/Lit" => GS.RespectLighting ? RainbowLit : RainbowDefault,
+                        "Sprites/Default" => RainbowDefault,
+                        "Sprites/Cherry-Default" => RainbowDefault,
+                        "UI/BlendModes/Screen" => RainbowScreenBlend,
+                        "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
+                        "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
+                        _ => material.shader
+                    };
 
-                if (material.shader.name is not (
-                    "Custom/RainbowLit" or 
-                    "Custom/RainbowDefault" or 
-                    "Custom/RainbowScreenBlend" or 
-                    "Custom/RainbowParticleAdd" or 
-                    "Custom/RainbowParticleAddSoft")) continue;
-                renderer.GetPropertyBlock(props);
-                props.SetFloat(PhaseProperty, GetPhase());
-                props.SetFloat(TimeFrequencyProperty, GS.TimeFrequency / 10);
-                props.SetFloat(XFrequencyProperty, GS.XFrequency*GS.XFrequency*Math.Sign(GS.XFrequency)/20);
-                props.SetFloat(YFrequencyProperty, GS.YFrequency*GS.YFrequency*Math.Sign(GS.YFrequency)/20);
-                renderer.SetPropertyBlock(props);
-
-                var block = new MaterialPropertyBlock();
-                block.SetColor("_FlashColor", new Color(1,1,1));
-                
+                    if (material.shader.name is not (
+                        "Custom/RainbowLit" or
+                        "Custom/RainbowDefault" or
+                        "Custom/RainbowScreenBlend" or
+                        "Custom/RainbowParticleAdd" or
+                        "Custom/RainbowParticleAddSoft")) continue;
+                    renderer.GetPropertyBlock(props);
+                    props.SetFloat(PhaseProperty, GetPhase());
+                    props.SetFloat(TimeFrequencyProperty, GS.TimeFrequency / 10);
+                    props.SetFloat(XFrequencyProperty, GS.XFrequency * GS.XFrequency * Math.Sign(GS.XFrequency) / 20);
+                    props.SetFloat(YFrequencyProperty, GS.YFrequency * GS.YFrequency * Math.Sign(GS.YFrequency) / 20);
+                    renderer.SetPropertyBlock(props);
+                }
             }
         }
 
