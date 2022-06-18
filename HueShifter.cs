@@ -1,6 +1,7 @@
 ﻿using System;
 using Modding;
 using System.Collections.Generic;
+using System.Reflection;
 using Satchel.BetterMenus;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -26,9 +27,7 @@ namespace HueShifter
 
         // Rider did this it's more efficient or something
         private static readonly int PhaseProperty = Shader.PropertyToID("_Phase");
-        private static readonly int TimeFrequencyProperty = Shader.PropertyToID("_TimeFrequency");
-        private static readonly int XFrequencyProperty = Shader.PropertyToID("_XFrequency");
-        private static readonly int YFrequencyProperty = Shader.PropertyToID("_YFrequency");
+        private static readonly int FrequencyProperty = Shader.PropertyToID("_Frequency");
 
         public void OnLoadGlobal(HueShifterSettings s) => GS = s;
         public HueShifterSettings OnSaveGlobal() => GS;
@@ -42,7 +41,7 @@ namespace HueShifter
                 RuntimePlatform.OSXPlayer => "osx",
                 _ => throw new PlatformNotSupportedException("What platform are you even on??")
             };
-
+            
             var assetBundle = AssetBundle.LoadFromStream(
                 typeof(HueShifter).Assembly.GetManifestResourceStream(
                     $"HueShifter.Resources.AssetBundles.hueshiftshaders-{platform}"));
@@ -86,15 +85,17 @@ namespace HueShifter
                     break;
                 case RandomPhaseSetting.Off:
                 default:
-                    return GS.Phase/360;
+                    return GS.Phase / 360;
             }
-            if (!Palette.ContainsKey(location)) Palette[location] = Random.Range(0f, 1f);
+            if (!Palette.ContainsKey(location)) Palette[location] = 
+                GS.AllowVanillaPhase ? Random.Range(0f, 1f) : Random.Range(0.05f, 0.95f);
             return Palette[location];
         }
 
         public void SetAllTheShaders()
         {
             var props = new MaterialPropertyBlock();
+            var frequencyVector = new Vector4(GS.XFrequency/40, GS.YFrequency/40, GS.ZFrequency/40, GS.TimeFrequency/10);
 
             foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
             {
@@ -121,9 +122,7 @@ namespace HueShifter
                         "Custom/RainbowParticleAddSoft")) continue;
                     renderer.GetPropertyBlock(props);
                     props.SetFloat(PhaseProperty, GetPhase());
-                    props.SetFloat(TimeFrequencyProperty, GS.TimeFrequency / 10);
-                    props.SetFloat(XFrequencyProperty, GS.XFrequency * GS.XFrequency * Math.Sign(GS.XFrequency) / 20);
-                    props.SetFloat(YFrequencyProperty, GS.YFrequency * GS.YFrequency * Math.Sign(GS.YFrequency) / 20);
+                    props.SetVector(FrequencyProperty, frequencyVector);
                     renderer.SetPropertyBlock(props);
                 }
             }
@@ -134,33 +133,40 @@ namespace HueShifter
             if (maybeToggleDelegates is not { } toggleDelegates) throw new InvalidOperationException();
             _menuRef ??= new Menu("HueShifter", new Element[]
                 {
-                    new HorizontalOption("Enabled", "", new[] {"False", "True"},
+                    new HorizontalOption("Enabled?", "", new[] {"False", "True"},
                         val => toggleDelegates.SetModEnabled(val != 0),
                         () => toggleDelegates.GetModEnabled() ? 1 : 0),
-                    new HorizontalOption("Respect Lighting", "Turn off for more vibrant colours. Applies on room reload.", new[] {"False", "True"},
-                        val => GS.RespectLighting = (val != 0),
-                        () => GS.RespectLighting ? 1 : 0),
-                    new CustomSlider("Phase",
+                    new CustomSlider("Phase Angle",
                             val => GS.Phase = val,
                             () => GS.Phase)
                         {minValue = 0, maxValue = 360f, wholeNumbers = false},
-                    new HorizontalOption("Random Phase", "", Enum.GetNames(typeof(RandomPhaseSetting)),
+                    new HorizontalOption("Randomize Phase?", "", Enum.GetNames(typeof(RandomPhaseSetting)),
                         val => GS.RandomPhase = (RandomPhaseSetting) val,
                         () => (int) GS.RandomPhase),
-                    new MenuButton("Re-roll Palette", "", _ =>
+                    new HorizontalOption("Allow Vanilla Phase?", "", new[] {"False", "True"},
+                        val => GS.AllowVanillaPhase = (val != 0),
+                        () => GS.AllowVanillaPhase ? 1 : 0),
+                    new MenuButton("Re-roll Random Phases", "", _ =>
                     {
                         Palette.Clear();
                         SetAllTheShaders();
                     }),
-                    new CustomSlider("X Frequency",
+                    new HorizontalOption("Respect Lighting?", "Turn off for more vibrant colours. Applies on room reload.", new[] {"False", "True"},
+                        val => GS.RespectLighting = (val != 0),
+                        () => GS.RespectLighting ? 1 : 0),
+                    new CustomSlider("Rainbow X",
                             val => GS.XFrequency = val,
                             () => GS.XFrequency)
-                        {minValue = -10f, maxValue = 10f, wholeNumbers = false},
-                    new CustomSlider("Y Frequency",
+                        {minValue = -100f, maxValue = 100f, wholeNumbers = false},
+                    new CustomSlider("Rainbow Y",
                             val => GS.YFrequency = val,
                             () => GS.YFrequency)
-                        {minValue = -10f, maxValue = 10f, wholeNumbers = false},
-                    new CustomSlider("Time Frequency",
+                        {minValue = -100f, maxValue = 100f, wholeNumbers = false},
+                    new CustomSlider("Rainbow Z",
+                            val => GS.ZFrequency = val,
+                            () => GS.ZFrequency)
+                        {minValue = -100f, maxValue = 100f, wholeNumbers = false},
+                    new CustomSlider("Animate Speed",
                             val => GS.TimeFrequency = val,
                             () => GS.TimeFrequency)
                         {minValue = -100, maxValue = 100f, wholeNumbers = false},

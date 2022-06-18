@@ -16,9 +16,7 @@ Shader "Custom/RainbowScreenBlend"
 		_ColorMask ("Color Mask", Float) = 15
 		
 		_Phase ("Phase", Float) = 0
-		_TimeFrequency ("Time Frequency", Float) = 0
-        _XFrequency ("X Frequency", Float) = 0
-        _YFrequency ("Y Frequency", Float) = 0
+        _Frequency ("Frequency", Vector) = (0,0,0,0) 
 	}
 
 	SubShader
@@ -68,6 +66,7 @@ Shader "Custom/RainbowScreenBlend"
 			struct v2f
 			{
 				float4 vertex   : SV_POSITION;
+				float3 worldPos   : TEXCOORD1;
 				fixed4 color    : COLOR;
 				half2 texcoord  : TEXCOORD0;
 			};
@@ -78,6 +77,7 @@ Shader "Custom/RainbowScreenBlend"
 			{
 				v2f OUT;
 				OUT.vertex = UnityObjectToClipPos(IN.vertex);
+				OUT.worldPos = mul(unity_ObjectToWorld, IN.vertex);
 				OUT.texcoord = IN.texcoord;
 #ifdef UNITY_HALF_TEXEL_OFFSET
 				OUT.vertex.xy += (_ScreenParams.zw-1.0)*float2(-1,1);
@@ -91,8 +91,8 @@ Shader "Custom/RainbowScreenBlend"
 			fixed4 frag(v2f IN) : SV_Target
 			{
 				half4 color = tex2D(_MainTex, IN.texcoord) * IN.color;
-				color.rgb *= color.a; // TC don't tend to do this in their shaders but it seems needed here.
-				color.rgb = hueshift(IN.texcoord, color.rgb);
+				color.rgb *= color.a;
+				color.rgb = hueshift(IN.worldPos, color.rgb);
 				clip(color.a - 0.01);
 				return color;
 			}

@@ -5,9 +5,7 @@ Properties {
     _InvFade ("Soft Particles Factor", Range(0.01,3.0)) = 1.0
     
     _Phase ("Phase", Float) = 0
-    _TimeFrequency ("Time Frequency", Float) = 0
-    _XFrequency ("X Frequency", Float) = 0
-    _YFrequency ("Y Frequency", Float) = 0
+    _Frequency ("Frequency", Vector) = (0,0,0,0) 
 }
 
 Category {
@@ -30,6 +28,7 @@ Category {
             #include "Rainbow.cginc"
 
             sampler2D _MainTex;
+            float4 _MainTex_ST;
             fixed4 _TintColor;
 
             struct appdata_t {
@@ -43,6 +42,7 @@ Category {
                 float4 vertex : SV_POSITION;
                 fixed4 color : COLOR;
                 float2 texcoord : TEXCOORD0;
+                float3 worldPos : TEXCOORD1;
                 UNITY_FOG_COORDS(1)
                 #ifdef SOFTPARTICLES_ON
                 float4 projPos : TEXCOORD2;
@@ -50,14 +50,13 @@ Category {
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            float4 _MainTex_ST;
-
             v2f vert (appdata_t v)
             {
                 v2f o;
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 o.vertex = UnityObjectToClipPos(v.vertex);
+                o.worldPos = mul(unity_ObjectToWorld, o.vertex);
                 #ifdef SOFTPARTICLES_ON
                 o.projPos = ComputeScreenPos (o.vertex);
                 COMPUTE_EYEDEPTH(o.projPos.z);
@@ -82,7 +81,7 @@ Category {
 
                 half4 col = i.color * tex2D(_MainTex, i.texcoord);
                 col.rgb *= col.a;
-                col.rgb = hueshift(i.texcoord, col.rgb);
+                col.rgb = hueshift(i.worldPos, col.rgb);
                 UNITY_APPLY_FOG_COLOR(i.fogCoord, col, fixed4(0,0,0,0)); // fog towards black due to our blend mode
                 return col;
             }

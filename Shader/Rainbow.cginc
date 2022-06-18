@@ -27,14 +27,14 @@ float3 hsl2rgb(float3 c)
     return c.z + c.y * (rgb - 0.5) * (1.0 - abs(2.0 * c.z - 1.0));
 }
 
-float _TimeFrequency;
-float _XFrequency;
-float _YFrequency;
 float _Phase;
+float4 _Frequency;
+float4 _MainTex_TexelSize;
 
-float3 hueshift(float2 uv, float3 rgb)
+float3 hueshift(float3 worldPos, float3 rgb)
 {
     float3 hsl = rgb2hsl(rgb);
-    hsl.x += _TimeFrequency*_Time.x + _XFrequency*uv.x + _YFrequency*uv.y + _Phase;
+    worldPos.xy /= worldPos.z-_WorldSpaceCameraPos.z;
+    hsl.x += dot(_Frequency, float4(worldPos, _Time.x)) + _Phase;
     return hsl2rgb(hsl);
 }

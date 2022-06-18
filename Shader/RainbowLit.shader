@@ -12,9 +12,7 @@ Shader "Custom/RainbowLit"
 		[PerRendererData] _EnableExternalAlpha ("Enable External Alpha", Float) = 0
         
 		_Phase ("Phase", Float) = 0
-		_TimeFrequency ("Time Frequency", Float) = 0
-        _XFrequency ("X Frequency", Float) = 0
-        _YFrequency ("Y Frequency", Float) = 0
+        _Frequency ("Frequency", Vector) = (0,0,0,0) 
     }
     SubShader
     {
@@ -37,11 +35,13 @@ Shader "Custom/RainbowLit"
         {
             float2 uv_MainTex;
             fixed4 color;
+        	fixed3 worldPos;
         };
 
         void vert (inout appdata_full v, out Input o)
         {
             v.vertex = UnityFlipSprite(v.vertex, _Flip);
+        	// o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 
             #if defined(PIXELSNAP_ON)
             v.vertex = UnityPixelSnap (v.vertex);
@@ -56,7 +56,7 @@ Shader "Custom/RainbowLit"
             fixed4 c = SampleSpriteTexture (IN.uv_MainTex) * IN.color;
 			// Unity's built in shader seems to multiply rgb by alpha here.
 			// HK's shaders don't I think?
-            o.Albedo = hueshift(IN.uv_MainTex, c.rgb);
+            o.Albedo = hueshift(IN.worldPos, c.rgb);
             o.Alpha = c.a;
         }
 

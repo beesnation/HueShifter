@@ -1,5 +1,6 @@
 Shader "Custom/RainbowDefault"
 {
+	// Based on Unity's Sprites-Default.shader
     Properties
     {
 		[PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
@@ -11,9 +12,7 @@ Shader "Custom/RainbowDefault"
 		[PerRendererData] _EnableExternalAlpha ("Enable External Alpha", Float) = 0
         
 		_Phase ("Phase", Float) = 0
-		_TimeFrequency ("Time Frequency", Float) = 0
-        _XFrequency ("X Frequency", Float) = 0
-        _YFrequency ("Y Frequency", Float) = 0
+        _Frequency ("Frequency", Vector) = (0,0,0,0) 
     }
     SubShader
     {
@@ -26,7 +25,7 @@ Shader "Custom/RainbowDefault"
         {
             CGPROGRAM
 
-            #pragma vertex SpriteVert // This comes with UnitySprites.cginc
+            #pragma vertex SpriteVert2
             #pragma fragment RainbowFrag
             #pragma target 2.0
             #pragma multi_compile_instancing
@@ -35,19 +34,44 @@ Shader "Custom/RainbowDefault"
             
             #include "Rainbow.cginc"
             #include "UnitySprites.cginc"
-			
-			fixed4 RainbowFrag(v2f IN) : SV_Target
+            
+			struct fragData
+			{
+				float4 vertex   : SV_POSITION;
+				fixed4 color    : COLOR;
+				float2 texcoord : TEXCOORD0;
+            	float3 worldPos : TEXCOORD1;
+				UNITY_VERTEX_OUTPUT_STEREO
+			};
+            
+			fragData SpriteVert2(appdata_t IN)
+			{
+				fragData OUT;
+
+				UNITY_SETUP_INSTANCE_ID (IN);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
+
+				OUT.vertex = UnityFlipSprite(IN.vertex, _Flip);
+				OUT.vertex = UnityObjectToClipPos(OUT.vertex);
+				OUT.texcoord = IN.texcoord;
+				OUT.worldPos = mul(unity_ObjectToWorld, IN.vertex);
+				OUT.color = IN.color * _Color * _RendererColor;
+
+				#ifdef PIXELSNAP_ON
+				OUT.vertex = UnityPixelSnap (OUT.vertex);
+				#endif
+
+				return OUT;
+			}
+            
+			fixed4 RainbowFrag(fragData IN) : SV_Target
 			{
 				fixed4 c = SampleSpriteTexture (IN.texcoord) * IN.color;
-				c = _Color * c;
-				c.rgb = hueshift(IN.texcoord, c.rgb);
+				c.rgb = hueshift(IN.worldPos, c.rgb);
 				return c;
 			}
             
             ENDCG
         }
-    	
-    	
-    	
     }
 }
