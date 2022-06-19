@@ -4,15 +4,15 @@ namespace HueShifter
 {
     public enum RandomPhaseSetting
     {
-        Off,
-        PerMapArea,
-        PerRoom,
+        Fixed,
+        RandomPerMapArea,
+        RandomPerRoom,
     }
     
     public class HueShifterSettings
     {
         public float Phase = 0;
-        public RandomPhaseSetting RandomPhase = RandomPhaseSetting.PerMapArea;
+        public RandomPhaseSetting RandomPhase = RandomPhaseSetting.RandomPerMapArea;
         public bool RespectLighting = true;
         public float XFrequency = 0;
         public float YFrequency = 0;
