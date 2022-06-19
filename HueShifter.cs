@@ -171,7 +171,7 @@ namespace HueShifter
                     isVisible = GS.RandomPhase == RandomPhaseSetting.Fixed,
                     minValue = 0, maxValue = 360f, wholeNumbers = false
                 },
-                new HorizontalOption("Allow Vanilla Colour?", "", new[] {"False", "True"},
+                new HorizontalOption("Allow Vanilla Colours?", "", new[] {"False", "True"},
                         val => GS.AllowVanillaPhase = val != 0,
                         () => GS.AllowVanillaPhase ? 1 : 0, Id: "AllowVanillaOption")
                     {isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed},
