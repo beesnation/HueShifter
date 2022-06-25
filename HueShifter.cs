@@ -103,7 +103,7 @@ namespace HueShifter
 
             foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
             {
-                if (renderer.gameObject.scene.name != GameManager.instance.sceneName) continue;
+                if (GameManager.GetBaseSceneName(renderer.gameObject.scene.name) != GameManager.instance.sceneName) continue;
                 if (renderer.gameObject.name == "Item Sprite") continue;
 
                 foreach (var material in renderer.materials)
