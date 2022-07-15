@@ -1,7 +1,6 @@
 ﻿using System;
 using Modding;
 using System.Collections.Generic;
-using System.Reflection;
 using Satchel.BetterMenus;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -142,36 +141,14 @@ namespace HueShifter
                     val =>
                     {
                         GS.RandomPhase = (RandomPhaseSetting) val;
-
-                        var sliderElem = _menuRef.Find("PhaseSlider");
-                        var allowVanillaElem = _menuRef.Find("AllowVanillaOption");
-                        var reRollElem = _menuRef.Find("ReRollButton");
-
-                        switch (GS.RandomPhase)
-                        {
-                            case RandomPhaseSetting.Fixed:
-                                sliderElem.Show();
-                                allowVanillaElem.Hide();
-                                reRollElem.Hide();
-                                break;
-                            case RandomPhaseSetting.RandomPerMapArea:
-                            case RandomPhaseSetting.RandomPerRoom:
-                                sliderElem.Hide();
-                                allowVanillaElem.Show();
-                                reRollElem.Show();
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
+                        UpdateMenu();
                     },
                     () => (int) GS.RandomPhase),
                 new CustomSlider("Hue Shift Angle",
                     val => GS.Phase = val,
-                    () => GS.Phase, Id: "PhaseSlider")
-                {
-                    isVisible = GS.RandomPhase == RandomPhaseSetting.Fixed,
-                    minValue = 0, maxValue = 360f, wholeNumbers = false
-                },
+                    () => GS.Phase, 
+                    0, 360f, Id: "PhaseSlider")
+                {isVisible = GS.RandomPhase == RandomPhaseSetting.Fixed},
                 new HorizontalOption("Allow Vanilla Colours?", "", new[] {"False", "True"},
                         val => GS.AllowVanillaPhase = val != 0,
                         () => GS.AllowVanillaPhase ? 1 : 0, Id: "AllowVanillaOption")
@@ -187,29 +164,37 @@ namespace HueShifter
                     () => GS.RespectLighting ? 1 : 0),
                 new CustomSlider("Rainbow X",
                         val => GS.XFrequency = val,
-                        () => GS.XFrequency)
-                    {minValue = -100f, maxValue = 100f, wholeNumbers = false},
+                        () => GS.XFrequency,
+                        -100, 100),
                 new CustomSlider("Rainbow Y",
                         val => GS.YFrequency = val,
-                        () => GS.YFrequency)
-                    {minValue = -100f, maxValue = 100f, wholeNumbers = false},
+                        () => GS.YFrequency,
+                        -100, 100),
                 new CustomSlider("Rainbow Z",
                         val => GS.ZFrequency = val,
-                        () => GS.ZFrequency)
-                    {minValue = -100f, maxValue = 100f, wholeNumbers = false},
+                        () => GS.ZFrequency,
+                        -100, 100),
                 new CustomSlider("Animate Speed",
                         val => GS.TimeFrequency = val,
-                        () => GS.TimeFrequency)
-                    {minValue = -100, maxValue = 100f, wholeNumbers = false},
+                        () => GS.TimeFrequency,
+                        -100, 100),
                 new MenuButton("Apply to Current Room", "", _ => SetAllTheShaders()),
                 new MenuButton("Reset to Defaults", "", _ =>
                 {
                     GS = new HueShifterSettings();
-                    _menuRef.Update();
+                    UpdateMenu();
                     SetAllTheShaders();
                 })
             });
             return _menuRef.GetMenuScreen(modListMenu);
+        }
+
+        private void UpdateMenu()
+        {
+            _menuRef.Find("PhaseSlider").isVisible = GS.RandomPhase == RandomPhaseSetting.Fixed;
+            _menuRef.Find("AllowVanillaOption").isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed;
+            _menuRef.Find("ReRollButton").isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed;
+            _menuRef.Update();
         }
 
         public bool ToggleButtonInsideMenu => true;
