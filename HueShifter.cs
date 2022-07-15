@@ -44,7 +44,7 @@ namespace HueShifter
             var assetBundle = AssetBundle.LoadFromStream(
                 typeof(HueShifter).Assembly.GetManifestResourceStream(
                     $"HueShifter.Resources.AssetBundles.hueshiftshaders-{platform}"));
-            foreach (var name in assetBundle.GetAllAssetNames()) Log($"assetBundle contains {name}");
+            // foreach (var name in assetBundle.GetAllAssetNames()) Log($"assetBundle contains {name}");
 
             RainbowDefault = assetBundle.LoadAsset<Shader>("assets/shader/rainbowdefault.shader");
             RainbowScreenBlend = assetBundle.LoadAsset<Shader>("assets/shader/rainbowscreenblend.shader");
