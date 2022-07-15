@@ -97,7 +97,7 @@ namespace HueShifter
         public void SetAllTheShaders()
         {
             var props = new MaterialPropertyBlock();
-            var frequencyVector = new Vector4(GS.XFrequency / 40, GS.YFrequency / 40, GS.ZFrequency / 40,
+            var frequencyVector = new Vector4(GS.XFrequency / 40, GS.YFrequency / 40, GS.ZFrequency / 200,
                 GS.TimeFrequency / 10);
 
             foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
