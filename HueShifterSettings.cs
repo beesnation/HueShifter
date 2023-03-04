@@ -13,6 +13,7 @@ namespace HueShifter
     {
         public float Phase = 0;
         public RandomPhaseSetting RandomPhase = RandomPhaseSetting.RandomPerMapArea;
+        public bool ShiftLighting = true;
         public bool RespectLighting = true;
         public float XFrequency = 0;
         public float YFrequency = 0;

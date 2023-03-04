@@ -59,11 +59,13 @@ namespace HueShifter
             Instance = this;
             if (RainbowDefault is null) LoadAssets();
             On.GameManager.OnNextLevelReady += OnNextLevelReady;
+            LightingHandler.Hook();
         }
 
         public void Unload()
         {
             On.GameManager.OnNextLevelReady -= OnNextLevelReady;
+            LightingHandler.Unhook();
         }
 
         private void OnNextLevelReady(On.GameManager.orig_OnNextLevelReady orig, GameManager self)
@@ -89,8 +91,7 @@ namespace HueShifter
             }
 
             if (!Palette.ContainsKey(location))
-                Palette[location] =
-                    GS.AllowVanillaPhase ? Random.Range(0f, 1f) : Random.Range(0.05f, 0.95f);
+                Palette[location] = GS.AllowVanillaPhase ? Random.Range(0f, 1f) : Random.Range(0.05f, 0.95f);
             return Palette[location];
         }
 
@@ -158,9 +159,13 @@ namespace HueShifter
                     Palette.Clear();
                     SetAllTheShaders();
                 }, Id: "ReRollButton") {isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed},
-                new HorizontalOption("Respect Lighting?", "Turn off for more vibrant colours. Applies on room reload.",
+                new HorizontalOption("Shift Scene Lighting", "Applies on room reload",
                     new[] {"False", "True"},
-                    val => GS.RespectLighting = (val != 0),
+                    val => GS.ShiftLighting = val != 0,
+                    () => GS.ShiftLighting ? 1 : 0),
+                new HorizontalOption("Respect Lighting", "Whether scene lighting tints recoloured objects. Applies on room reload",
+                    new[] {"False", "True"},
+                    val => GS.RespectLighting = val != 0,
                     () => GS.RespectLighting ? 1 : 0),
                 new CustomSlider("Rainbow X",
                         val => GS.XFrequency = val,
