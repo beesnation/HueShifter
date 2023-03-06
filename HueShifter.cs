@@ -21,6 +21,8 @@ namespace HueShifter
         public Shader RainbowLit;
         public Shader RainbowParticleAdd;
         public Shader RainbowParticleAddSoft;
+        public Shader RainbowGrassDefault;
+        public Shader RainbowGrassLit;
 
         public Dictionary<string, float> Palette = new();
 
@@ -51,6 +53,8 @@ namespace HueShifter
             RainbowLit = assetBundle.LoadAsset<Shader>("assets/shader/rainbowlit.shader");
             RainbowParticleAdd = assetBundle.LoadAsset<Shader>("assets/shader/rainbowparticleadd.shader");
             RainbowParticleAddSoft = assetBundle.LoadAsset<Shader>("assets/shader/rainbowparticleaddsoft.shader");
+            RainbowGrassDefault = assetBundle.LoadAsset<Shader>("assets/shader/rainbowgrassdefault.shader");
+            RainbowGrassLit = assetBundle.LoadAsset<Shader>("assets/shader/rainbowgrasslit.shader");
         }
 
         public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
@@ -116,6 +120,8 @@ namespace HueShifter
                         "UI/BlendModes/Screen" => RainbowScreenBlend,
                         "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
                         "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
+                        "Hollow Knight/Grass-Default" => RainbowGrassDefault,
+                        "Hollow Knight/Grass-Lit" => GS.RespectLighting ? RainbowGrassLit : RainbowGrassDefault,
                         _ => material.shader
                     };
 
@@ -124,7 +130,9 @@ namespace HueShifter
                         "Custom/RainbowDefault" or
                         "Custom/RainbowScreenBlend" or
                         "Custom/RainbowParticleAdd" or
-                        "Custom/RainbowParticleAddSoft")) continue;
+                        "Custom/RainbowParticleAddSoft" or
+                        "Custom/RainbowGrassDefault" or
+                        "Custom/RainbowGrassLit")) continue;
                     renderer.GetPropertyBlock(props);
                     props.SetFloat(PhaseProperty, GetPhase());
                     props.SetVector(FrequencyProperty, frequencyVector);
@@ -137,7 +145,7 @@ namespace HueShifter
         {
             _menuRef ??= new Menu("HueShifter", new Element[]
             {
-                toggleDelegates.Value.CreateToggle("Mod Enabled", ""),
+                toggleDelegates?.CreateToggle("Mod Enabled", ""),
                 new HorizontalOption("Randomize Hues", "", Enum.GetNames(typeof(RandomPhaseSetting)),
                     val =>
                     {
