@@ -121,7 +121,7 @@ namespace HueShifter
                         "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
                         "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
                         "Hollow Knight/Grass-Default" => RainbowGrassDefault,
-                        "Hollow Knight/Grass-Lit" => GS.RespectLighting ? RainbowGrassLit : RainbowGrassDefault,
+                        "Hollow Knight/Grass-Diffuse" => GS.RespectLighting ? RainbowGrassLit : RainbowGrassDefault,
                         _ => material.shader
                     };
 
