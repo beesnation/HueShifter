@@ -64,12 +64,14 @@ namespace HueShifter
             if (RainbowDefault is null) LoadAssets();
             On.GameManager.OnNextLevelReady += OnNextLevelReady;
             LightingHandler.Hook();
+            HeroLightHandler.Hook();
         }
 
         public void Unload()
         {
             On.GameManager.OnNextLevelReady -= OnNextLevelReady;
             LightingHandler.Unhook();
+            HeroLightHandler.Unhook();
         }
 
         private void OnNextLevelReady(On.GameManager.orig_OnNextLevelReady orig, GameManager self)
