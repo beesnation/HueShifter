@@ -1,6 +1,7 @@
 ﻿using System;
 using Modding;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Satchel.BetterMenus;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -10,11 +11,11 @@ namespace HueShifter
 {
     public class HueShifter : Mod, ICustomMenuMod, ITogglableMod, IGlobalSettings<HueShifterSettings>
     {
-        internal static HueShifter Instance;
+        public static HueShifter Instance;
         public HueShifterSettings GS { get; private set; } = new();
         public override string GetVersion() => GetType().Assembly.GetName().Version.ToString();
 
-        private Menu _menuRef;
+        private Menu menuRef;
 
         public Shader RainbowDefault;
         public Shader RainbowScreenBlend;
@@ -101,51 +102,75 @@ namespace HueShifter
             return Palette[location];
         }
 
-        public void SetAllTheShaders()
+        private void SetAllTheShaders()
         {
             var props = new MaterialPropertyBlock();
             var frequencyVector = new Vector4(GS.XFrequency / 40, GS.YFrequency / 40, GS.ZFrequency / 200,
                 GS.TimeFrequency / 10);
 
+            Dictionary<Material, Material> materialSwaps = new();
             foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
             {
                 if (GameManager.GetBaseSceneName(renderer.gameObject.scene.name) != GameManager.instance.sceneName) continue;
                 if (renderer.gameObject.name == "Item Sprite") continue;
+                if (renderer is SpriteRenderer {color.maxColorComponent: 0}) continue;
 
-                foreach (var material in renderer.materials)
+                var hasShifted = false;
+
+                var oldMaterials = renderer.sharedMaterials; // Unity returns copies of these arrays
+                for (var i = 0; i < oldMaterials.Length; i++)
                 {
-                    material.shader = material.shader.name switch
-                    {
-                        "Sprites/Lit" => GS.RespectLighting ? RainbowLit : RainbowDefault,
-                        "Sprites/Default" => RainbowDefault,
-                        "Sprites/Cherry-Default" => RainbowDefault,
-                        "UI/BlendModes/Screen" => RainbowScreenBlend,
-                        "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
-                        "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
-                        "Hollow Knight/Grass-Default" => RainbowGrassDefault,
-                        "Hollow Knight/Grass-Diffuse" => GS.RespectLighting ? RainbowGrassLit : RainbowGrassDefault,
-                        _ => material.shader
-                    };
-
-                    if (material.shader.name is not (
+                    var oldMaterial = oldMaterials[i];
+                    if (oldMaterial is null) continue;
+                    if (oldMaterial.shader.name is 
                         "Custom/RainbowLit" or
                         "Custom/RainbowDefault" or
                         "Custom/RainbowScreenBlend" or
                         "Custom/RainbowParticleAdd" or
                         "Custom/RainbowParticleAddSoft" or
                         "Custom/RainbowGrassDefault" or
-                        "Custom/RainbowGrassLit")) continue;
-                    renderer.GetPropertyBlock(props);
-                    props.SetFloat(PhaseProperty, GetPhase());
-                    props.SetVector(FrequencyProperty, frequencyVector);
-                    renderer.SetPropertyBlock(props);
+                        "Custom/RainbowGrassLit")
+                    {
+                        hasShifted = true;
+                        continue;
+                    }
+                    
+                    if (!materialSwaps.ContainsKey(oldMaterial))
+                    {
+                        var newShader = oldMaterial.shader.name switch
+                        {
+                            "Sprites/Lit" => GS.RespectLighting ? RainbowLit : RainbowDefault,
+                            "Sprites/Default" => RainbowDefault,
+                            "Sprites/Cherry-Default" => RainbowDefault,
+                            "UI/BlendModes/Screen" => RainbowScreenBlend,
+                            "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
+                            "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
+                            "Hollow Knight/Grass-Default" => RainbowGrassDefault,
+                            "Hollow Knight/Grass-Diffuse" => GS.RespectLighting ? RainbowGrassLit : RainbowGrassDefault,
+                            _ => null,
+                        };
+                        if (newShader is null) continue;
+                        var newMaterial = UObject.Instantiate(oldMaterial);
+                        newMaterial.shader = newShader;
+                        materialSwaps[oldMaterial] = newMaterial;
+                    }
+                    hasShifted = true;
+                    oldMaterials[i] = materialSwaps[oldMaterial];
                 }
+                
+                if (!hasShifted) continue;
+                renderer.sharedMaterials = oldMaterials;
+                
+                renderer.GetPropertyBlock(props);
+                props.SetFloat(PhaseProperty, GetPhase());
+                props.SetVector(FrequencyProperty, frequencyVector);
+                renderer.SetPropertyBlock(props);
             }
         }
 
         public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
         {
-            _menuRef ??= new Menu("HueShifter", new Element[]
+            menuRef ??= new Menu("HueShifter", new Element[]
             {
                 toggleDelegates?.CreateToggle("Mod Enabled", ""),
                 new HorizontalOption("Randomize Hues", "", Enum.GetNames(typeof(RandomPhaseSetting)),
@@ -201,15 +226,15 @@ namespace HueShifter
                     SetAllTheShaders();
                 })
             });
-            return _menuRef.GetMenuScreen(modListMenu);
+            return menuRef.GetMenuScreen(modListMenu);
         }
 
         private void UpdateMenu()
         {
-            _menuRef.Find("PhaseSlider").isVisible = GS.RandomPhase == RandomPhaseSetting.Fixed;
-            _menuRef.Find("AllowVanillaOption").isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed;
-            _menuRef.Find("ReRollButton").isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed;
-            _menuRef.Update();
+            menuRef.Find("PhaseSlider").isVisible = GS.RandomPhase == RandomPhaseSetting.Fixed;
+            menuRef.Find("AllowVanillaOption").isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed;
+            menuRef.Find("ReRollButton").isVisible = GS.RandomPhase != RandomPhaseSetting.Fixed;
+            menuRef.Update();
         }
 
         public bool ToggleButtonInsideMenu => true;
