@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections;
 using Modding;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Satchel.BetterMenus;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -78,7 +78,12 @@ namespace HueShifter
         private void OnNextLevelReady(On.GameManager.orig_OnNextLevelReady orig, GameManager self)
         {
             orig(self);
-            SetAllTheShaders();
+            IEnumerator DelayedShaderSet()
+            {
+                yield return null; // wait a frame
+                SetAllTheShaders();
+            }
+            GameManager.instance.StartCoroutine(DelayedShaderSet());
         }
 
         public float GetPhase()
