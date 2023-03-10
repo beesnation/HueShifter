@@ -28,7 +28,6 @@ namespace HueShifter
         public readonly Dictionary<string, float> Palette = new();
         internal readonly MaterialPropertyBlock materialPropertyBlock = new();
         private readonly Dictionary<Material, Material> materialSwaps = new ();
-        private Renderer[] cameraParticles;
 
         // Rider did this it's more efficient or something
         private static readonly int PhaseProperty = Shader.PropertyToID("_Phase");
@@ -130,9 +129,7 @@ namespace HueShifter
                             SetShader(renderer, phase, frequencyVector);
             }
 
-
-            cameraParticles ??= GameCameras.instance.sceneParticles.GetComponentsInChildren<Renderer>(false);
-            foreach (var renderer in cameraParticles)
+            foreach (var renderer in GameCameras.instance.sceneParticles.GetComponentsInChildren<Renderer>(false))
                 if (renderer.enabled)
                     SetShader(renderer, phase, frequencyVector);
             
