@@ -2,7 +2,6 @@
 using System.Collections;
 using Modding;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Satchel.BetterMenus;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -115,8 +114,6 @@ namespace HueShifter
 
         private void SetAllTheShaders()
         {
-            var watch = Stopwatch.StartNew();
-            
             var frequencyVector = new Vector4(GS.XFrequency / 40, GS.YFrequency / 40, GS.ZFrequency / 200,
                 GS.TimeFrequency / 10);
             var phase = GetPhase();
@@ -140,9 +137,6 @@ namespace HueShifter
                     SetShader(renderer, phase, frequencyVector);
             
             materialSwaps.Clear();
-            
-            watch.Stop();
-            Log(watch.ElapsedMilliseconds);
         }
 
         public static bool ShouldShift(Renderer renderer)
