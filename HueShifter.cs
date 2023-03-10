@@ -26,9 +26,10 @@ namespace HueShifter
         public Shader RainbowGrassDefault;
         public Shader RainbowGrassLit;
 
-        public Dictionary<string, float> Palette = new();
-        internal readonly MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
+        public readonly Dictionary<string, float> Palette = new();
+        internal readonly MaterialPropertyBlock materialPropertyBlock = new();
         private readonly Dictionary<Material, Material> materialSwaps = new ();
+        private Renderer[] cameraParticles;
 
         // Rider did this it's more efficient or something
         private static readonly int PhaseProperty = Shader.PropertyToID("_Phase");
@@ -120,12 +121,23 @@ namespace HueShifter
                 GS.TimeFrequency / 10);
             var phase = GetPhase();
 
-            foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
-                if (ShouldShift(renderer))
-                    SetShader(renderer, phase, frequencyVector);
+            for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+            {
+                // GetAllScenes is deprecated???
+                var scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (GameManager.GetBaseSceneName(scene.name) != GameManager.instance.sceneName) continue;
+                
+                foreach (var rootObj in scene.GetRootGameObjects())
+                    foreach (var renderer in rootObj.GetComponentsInChildren<Renderer>(true))
+                        if (ShouldShift(renderer))
+                            SetShader(renderer, phase, frequencyVector);
+            }
 
-            foreach (var renderer in GameCameras.instance.sceneParticles.GetComponentsInChildren<Renderer>(false))
-                SetShader(renderer, phase, frequencyVector);
+
+            cameraParticles ??= GameCameras.instance.sceneParticles.GetComponentsInChildren<Renderer>(false);
+            foreach (var renderer in cameraParticles)
+                if (renderer.enabled)
+                    SetShader(renderer, phase, frequencyVector);
             
             materialSwaps.Clear();
             
@@ -138,8 +150,7 @@ namespace HueShifter
             var go = renderer.gameObject;
             return
                 renderer is not SpriteRenderer {color.maxColorComponent: 0} &&
-                go.name != "Item Sprite" &&
-                GameManager.GetBaseSceneName(go.scene.name) == GameManager.instance.sceneName;
+                go.name != "Item Sprite";
         }
         
         public void SetShader(Renderer renderer, float phase, Vector4 frequencyVector)
@@ -151,7 +162,6 @@ namespace HueShifter
             {
                 var oldMaterial = oldMaterials[i];
                 if (oldMaterial is null) continue;
-                Log(oldMaterial.shader.name);
                 if (oldMaterial.shader.name is 
                     "Custom/RainbowLit" or
                     "Custom/RainbowDefault" or
