@@ -2,6 +2,7 @@
 using System.Collections;
 using Modding;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Satchel.BetterMenus;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -26,6 +27,8 @@ namespace HueShifter
         public Shader RainbowGrassLit;
 
         public Dictionary<string, float> Palette = new();
+        internal readonly MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
+        private readonly Dictionary<Material, Material> materialSwaps = new ();
 
         // Rider did this it's more efficient or something
         private static readonly int PhaseProperty = Shader.PropertyToID("_Phase");
@@ -73,8 +76,10 @@ namespace HueShifter
             On.GameManager.OnNextLevelReady -= OnNextLevelReady;
             LightingHandler.Unhook();
             HeroLightHandler.Unhook();
+            foreach (var renderer in GameCameras.instance.sceneParticles.GetComponentsInChildren<Renderer>(true))
+                SetShader(renderer, 0, Vector4.zero);
         }
-
+        
         private void OnNextLevelReady(On.GameManager.orig_OnNextLevelReady orig, GameManager self)
         {
             orig(self);
@@ -109,68 +114,87 @@ namespace HueShifter
 
         private void SetAllTheShaders()
         {
-            var props = new MaterialPropertyBlock();
+            var watch = Stopwatch.StartNew();
+            
             var frequencyVector = new Vector4(GS.XFrequency / 40, GS.YFrequency / 40, GS.ZFrequency / 200,
                 GS.TimeFrequency / 10);
+            var phase = GetPhase();
 
-            Dictionary<Material, Material> materialSwaps = new();
             foreach (var renderer in UObject.FindObjectsOfType<Renderer>(true))
+                if (ShouldShift(renderer))
+                    SetShader(renderer, phase, frequencyVector);
+
+            foreach (var renderer in GameCameras.instance.sceneParticles.GetComponentsInChildren<Renderer>(false))
+                SetShader(renderer, phase, frequencyVector);
+            
+            materialSwaps.Clear();
+            
+            watch.Stop();
+            Log(watch.ElapsedMilliseconds);
+        }
+
+        public static bool ShouldShift(Renderer renderer)
+        {
+            var go = renderer.gameObject;
+            return
+                renderer is not SpriteRenderer {color.maxColorComponent: 0} &&
+                go.name != "Item Sprite" &&
+                GameManager.GetBaseSceneName(go.scene.name) == GameManager.instance.sceneName;
+        }
+        
+        public void SetShader(Renderer renderer, float phase, Vector4 frequencyVector)
+        {
+            var hasShifted = false;
+
+            var oldMaterials = renderer.sharedMaterials; // Unity returns copies of these arrays
+            for (var i = 0; i < oldMaterials.Length; i++)
             {
-                if (GameManager.GetBaseSceneName(renderer.gameObject.scene.name) != GameManager.instance.sceneName) continue;
-                if (renderer.gameObject.name == "Item Sprite") continue;
-                if (renderer is SpriteRenderer {color.maxColorComponent: 0}) continue;
-
-                var hasShifted = false;
-
-                var oldMaterials = renderer.sharedMaterials; // Unity returns copies of these arrays
-                for (var i = 0; i < oldMaterials.Length; i++)
+                var oldMaterial = oldMaterials[i];
+                if (oldMaterial is null) continue;
+                Log(oldMaterial.shader.name);
+                if (oldMaterial.shader.name is 
+                    "Custom/RainbowLit" or
+                    "Custom/RainbowDefault" or
+                    "Custom/RainbowScreenBlend" or
+                    "Custom/RainbowParticleAdd" or
+                    "Custom/RainbowParticleAddSoft" or
+                    "Custom/RainbowGrassDefault" or
+                    "Custom/RainbowGrassLit")
                 {
-                    var oldMaterial = oldMaterials[i];
-                    if (oldMaterial is null) continue;
-                    if (oldMaterial.shader.name is 
-                        "Custom/RainbowLit" or
-                        "Custom/RainbowDefault" or
-                        "Custom/RainbowScreenBlend" or
-                        "Custom/RainbowParticleAdd" or
-                        "Custom/RainbowParticleAddSoft" or
-                        "Custom/RainbowGrassDefault" or
-                        "Custom/RainbowGrassLit")
-                    {
-                        hasShifted = true;
-                        continue;
-                    }
-                    
-                    if (!materialSwaps.ContainsKey(oldMaterial))
-                    {
-                        var newShader = oldMaterial.shader.name switch
-                        {
-                            "Sprites/Lit" => GS.RespectLighting ? RainbowLit : RainbowDefault,
-                            "Sprites/Default" => RainbowDefault,
-                            "Sprites/Cherry-Default" => RainbowDefault,
-                            "UI/BlendModes/Screen" => RainbowScreenBlend,
-                            "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
-                            "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
-                            "Hollow Knight/Grass-Default" => RainbowGrassDefault,
-                            "Hollow Knight/Grass-Diffuse" => GS.RespectLighting ? RainbowGrassLit : RainbowGrassDefault,
-                            _ => null,
-                        };
-                        if (newShader is null) continue;
-                        var newMaterial = UObject.Instantiate(oldMaterial);
-                        newMaterial.shader = newShader;
-                        materialSwaps[oldMaterial] = newMaterial;
-                    }
                     hasShifted = true;
-                    oldMaterials[i] = materialSwaps[oldMaterial];
+                    continue;
                 }
                 
-                if (!hasShifted) continue;
-                renderer.sharedMaterials = oldMaterials;
-                
-                renderer.GetPropertyBlock(props);
-                props.SetFloat(PhaseProperty, GetPhase());
-                props.SetVector(FrequencyProperty, frequencyVector);
-                renderer.SetPropertyBlock(props);
+                if (!materialSwaps.ContainsKey(oldMaterial))
+                {
+                    var newShader = oldMaterial.shader.name switch
+                    {
+                        "Sprites/Lit" => GS.RespectLighting ? RainbowLit : RainbowDefault,
+                        "Sprites/Default" => RainbowDefault,
+                        "Sprites/Cherry-Default" => RainbowDefault,
+                        "UI/BlendModes/Screen" => RainbowScreenBlend,
+                        "Legacy Shaders/Particles/Additive" => RainbowParticleAdd,
+                        "Legacy Shaders/Particles/Additive (Soft)" => RainbowParticleAddSoft,
+                        "Hollow Knight/Grass-Default" => RainbowGrassDefault,
+                        "Hollow Knight/Grass-Diffuse" => GS.RespectLighting ? RainbowGrassLit : RainbowGrassDefault,
+                        _ => null,
+                    };
+                    if (newShader is null) continue;
+                    var newMaterial = UObject.Instantiate(oldMaterial);
+                    newMaterial.shader = newShader;
+                    materialSwaps[oldMaterial] = newMaterial;
+                }
+                hasShifted = true;
+                oldMaterials[i] = materialSwaps[oldMaterial];
             }
+            
+            if (!hasShifted) return;
+            renderer.sharedMaterials = oldMaterials;
+            
+            renderer.GetPropertyBlock(materialPropertyBlock);
+            materialPropertyBlock.SetFloat(PhaseProperty, phase);
+            materialPropertyBlock.SetVector(FrequencyProperty, frequencyVector);
+            renderer.SetPropertyBlock(materialPropertyBlock);
         }
 
         public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
